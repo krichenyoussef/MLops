@@ -1,0 +1,16 @@
+validate:
+  # required columns in processed datasets
+  required_cols:
+    - TransactionID
+    - TransactionDT
+    - TransactionAmt
+    - isFraud
+
+  # sanity thresholds
+  max_missing_ratio_per_col: 0.999   # allow extremely sparse cols but not totally empty
+  max_duplicate_id_ratio: 0.0001     # duplicates should be near zero
+  min_fraud_rate: 0.0001            # 0.01%
+  max_fraud_rate: 0.05              # 5%
+
+  # split sanity (time-based)
+  enforce_time_order: true
