@@ -1,6 +1,6 @@
 data/raw/
 data/processed/
-data/features/
+data/data_features/
 models/
 notebooks/__pycache__/
 notebooks/
