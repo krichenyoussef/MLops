@@ -1,0 +1,41 @@
+stages:
+  process:
+    cmd: python src/data/make_dataset.py
+    deps:
+      - src/data/make_dataset.py
+      - data/raw/train_transaction.csv
+      - data/raw/train_identity.csv
+    outs:
+      - data/processed/train.parquet
+
+  validate:
+    cmd: python -m src.validate.data_checks
+    deps:
+      - src/validate/data_checks.py
+      - data/processed/train.parquet
+    params:
+      - validate
+    outs:
+      - reports/data_validation.json
+
+  train:
+    cmd: python -m src.models.train_xgb_magic
+    deps:
+      - src/models/train_xgb_magic.py
+      - src/config/settings.py
+      - data/processed/train.parquet
+    params:
+      - train
+    outs:
+      - models/artifacts/model_xgb.bin
+    metrics:
+      - reports/metrics.json
+
+  select_register:
+    cmd: python -m src.models.select_and_register
+    deps:
+      - src/models/select_and_register.py
+      - reports/metrics.json
+      - models/artifacts/model_xgb.bin
+    params:
+      - registry

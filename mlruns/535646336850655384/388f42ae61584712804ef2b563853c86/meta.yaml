@@ -1,0 +1,14 @@
+artifact_uri: file:///C:/Users/Youss/OneDrive/Bureau/repos_github/MLops/mlruns/535646336850655384/388f42ae61584712804ef2b563853c86/artifacts
+end_time: 1766252733250
+entry_point_name: ''
+experiment_id: '535646336850655384'
+lifecycle_stage: active
+run_id: 388f42ae61584712804ef2b563853c86
+run_name: xgb_magic
+source_name: ''
+source_type: 4
+source_version: ''
+start_time: 1766252728619
+status: 4
+tags: []
+user_id: Youss

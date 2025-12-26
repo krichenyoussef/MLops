@@ -1,0 +1,30 @@
+data:
+  raw_dir: data/raw
+  processed_dir: data/processed
+  id_col: TransactionID
+  time_col: TransactionDT
+  target_col: isFraud
+  val_ratio: 0.15
+  test_ratio: 0.15
+
+mlflow:
+  experiment: "ieee-cis-fraud"
+
+data:
+  processed_dir: "data/processed"
+  target_col: "isFraud"
+
+train:
+  seed: 42
+  n_splits: 5
+
+xgboost:
+  n_estimators: 5000
+  max_depth: 12
+  learning_rate: 0.02
+  subsample: 0.8
+  colsample_bytree: 0.4
+  reg_lambda: 1.0
+  tree_method: "hist"
+  eval_metric: "auc"
+  missing: -1
