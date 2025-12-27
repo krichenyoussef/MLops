@@ -1,36 +1,78 @@
 stages:
-  process:
-    cmd: python src/data/make_dataset.py
+  # --------------------------------------------------
+  # 1. Prepare INTERIM data (clean + merged)
+  # --------------------------------------------------
+  prepare_train:
+    cmd: python src/data/make_dataset.py --split train
     deps:
       - src/data/make_dataset.py
-      - data/raw/train_transaction.csv
-      - data/raw/train_identity.csv
+      - params.yaml
+      - data/raw/train/train_transaction.csv
+      - data/raw/train/train_identity.csv
     outs:
-      - data/processed/train.parquet
+      - data/interim/train_merged.parquet
 
+  prepare_test:
+    cmd: python src/data/make_dataset.py --split test
+    deps:
+      - src/data/make_dataset.py
+      - params.yaml
+      - data/raw/test/test_transaction.csv
+      - data/raw/test/test_identity.csv
+    outs:
+      - data/interim/test_merged.parquet
+
+  # --------------------------------------------------
+  # 2. Feature engineering (model-ready data)
+  # --------------------------------------------------
+  features:
+    cmd: python src/features/build_features.py
+    deps:
+      - src/features/build_features.py
+      - params.yaml
+      - data/interim/train_merged.parquet
+      - data/interim/test_merged.parquet
+    outs:
+      - data/features/X_train.parquet
+      - data/features/y_train.parquet
+      - data/features/X_test.parquet
+
+  # --------------------------------------------------
+  # 3. Validation (hard checks)
+  # --------------------------------------------------
   validate:
     cmd: python -m src.validate.data_checks
     deps:
       - src/validate/data_checks.py
-      - data/processed/train.parquet
+      - params.yaml
+      - data/features/X_train.parquet
+      - data/features/y_train.parquet
     params:
       - validate
     outs:
       - reports/data_validation.json
 
+  # --------------------------------------------------
+  # 4. Train model
+  # --------------------------------------------------
   train:
     cmd: python -m src.models.train_xgb_magic
     deps:
       - src/models/train_xgb_magic.py
-      - src/config/settings.py
-      - data/processed/train.parquet
+      - params.yaml
+      - data/features/X_train.parquet
+      - data/features/y_train.parquet
     params:
       - train
+      - xgboost
     outs:
       - models/artifacts/model_xgb.bin
     metrics:
       - reports/metrics.json
 
+  # --------------------------------------------------
+  # 5. Select & register model
+  # --------------------------------------------------
   select_register:
     cmd: python -m src.models.select_and_register
     deps:

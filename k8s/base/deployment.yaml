@@ -15,9 +15,13 @@ spec:
       containers:
         - name: fraud-api
           image: fraud-api:dev
+          command: ["uvicorn"]
+          args: ["src.app:app", "--host", "0.0.0.0", "--port", "8000"]
           ports:
             - containerPort: 8000
           env:
+            - name: MODEL_PATH
+              value: models/artifacts/model_xgb.bin
             - name: MLFLOW_TRACKING_URI
               valueFrom:
                 secretKeyRef:

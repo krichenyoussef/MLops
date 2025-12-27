@@ -14,7 +14,7 @@ from xgboost import XGBClassifier
 from xgboost.callback import EarlyStopping
 
 from src.config.settings import load_params, load_settings
-from src.features.magic_features import (
+from src.features.build_features import (
     build_magic_features_train_val,
     finalize_for_xgb,
 )

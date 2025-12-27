@@ -141,7 +141,7 @@ def main() -> int:
     if not all(r.ok for r in results):
         print("❌ File checks failed. Fix build_dataset outputs first.")
         for r in results:
-            print(("✅" if r.ok else "❌"), r.msg)
+            print(("OK" if r.ok else "FAIL"), r.msg)
         return 1
 
     train_df = pd.read_parquet(processed_dir / "train.parquet")
@@ -161,7 +161,7 @@ def main() -> int:
     # Print summary
     print("\n==== DATA CHECKS SUMMARY ====")
     for r in results:
-        print(("✅" if r.ok else "❌"), r.msg)
+        print(("OK" if r.ok else "FAIL"), r.msg)
 
     ok = all(r.ok for r in results)
     if ok:
@@ -174,3 +174,4 @@ def main() -> int:
 
 if __name__ == "__main__":
     sys.exit(main())
+

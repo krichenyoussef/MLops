@@ -1,23 +1,79 @@
+# --------------------------------------------------
+# Dataset-level configuration (GLOBAL TRUTH)
+# --------------------------------------------------
 data:
   raw_dir: data/raw
-  processed_dir: data/processed
+
   id_col: TransactionID
   time_col: TransactionDT
   target_col: isFraud
+
   val_ratio: 0.15
-  test_ratio: 0.15
 
-mlflow:
-  experiment: "ieee-cis-fraud"
 
-data:
-  processed_dir: "data/processed"
-  target_col: "isFraud"
+# --------------------------------------------------
+# Interim stage (clean + merged, validation policy)
+# --------------------------------------------------
+interim:
+  missing_threshold_warning: 0.9   # soft warning only
+  allow_missing_identity: true
 
+  fail_on:
+    target_in_test: true
+    target_missing_in_train: true
+
+
+# --------------------------------------------------
+# Feature engineering (MODEL-AGNOSTIC)
+# --------------------------------------------------
+features:
+  categorical_encoding: label
+  unknown_category_value: -1
+
+
+# --------------------------------------------------
+# Hard data validation (MODEL-INDEPENDENT)
+# --------------------------------------------------
+validate:
+  required_cols:
+    - TransactionID
+    - TransactionDT
+    - TransactionAmt
+    - isFraud
+
+  max_missing_ratio_per_col: 0.999
+  max_duplicate_id_ratio: 0.0001
+
+  min_fraud_rate: 0.0001
+  max_fraud_rate: 0.05
+
+  enforce_time_order: true
+
+
+# --------------------------------------------------
+# Model-specific input adapters
+# --------------------------------------------------
+model_input:
+  xgboost:
+    missing_value: -1
+  # future:
+  # sklearn:
+  #   missing_strategy: mean
+  # catboost:
+  #   missing_value: NaN
+
+
+# --------------------------------------------------
+# Training (model-agnostic)
+# --------------------------------------------------
 train:
   seed: 42
   n_splits: 5
 
+
+# --------------------------------------------------
+# XGBoost hyperparameters (TRAINING ONLY)
+# --------------------------------------------------
 xgboost:
   n_estimators: 5000
   max_depth: 12
@@ -27,4 +83,10 @@ xgboost:
   reg_lambda: 1.0
   tree_method: "hist"
   eval_metric: "auc"
-  missing: -1
+
+
+# --------------------------------------------------
+# Experiment tracking
+# --------------------------------------------------
+mlflow:
+  experiment: "ieee-cis-fraud"

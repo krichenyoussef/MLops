@@ -1,0 +1,78 @@
+schema: '2.0'
+stages:
+  process:
+    cmd: python src/data/make_dataset.py
+    deps:
+    - path: data/raw/train_identity.csv
+      hash: md5
+      md5: 8487db5001c8bad139f3318d5d3db416
+      size: 26529680
+    - path: data/raw/train_transaction.csv
+      hash: md5
+      md5: 58b4038d8715f5e11007b826bef00ce7
+      size: 683351067
+    - path: src/data/make_dataset.py
+      hash: md5
+      md5: 73c827826398d6d2ba5ea462c69ff83e
+      size: 2120
+    outs:
+    - path: data/processed/test.parquet
+      hash: md5
+      md5: 64ae439b8d8d0ade0184e4d88f160333
+      size: 13298473
+    - path: data/processed/train.parquet
+      hash: md5
+      md5: 844fff21ac0b9f760824f8552359e24d
+      size: 56552581
+    - path: data/processed/val.parquet
+      hash: md5
+      md5: 94b26aa8991c4c9becbfc8056f516fc9
+      size: 12161965
+  prepare_train:
+    cmd: python src/data/make_dataset.py --split train
+    deps:
+    - path: data/raw/train/train_identity.csv
+      hash: md5
+      md5: 8487db5001c8bad139f3318d5d3db416
+      size: 26529680
+    - path: data/raw/train/train_transaction.csv
+      hash: md5
+      md5: 58b4038d8715f5e11007b826bef00ce7
+      size: 683351067
+    - path: params.yaml
+      hash: md5
+      md5: a3596e143b96de339588aaefd5657be2
+      size: 904
+    - path: src/data/make_dataset.py
+      hash: md5
+      md5: a98c3e1214c18d45e506688a2eaf068d
+      size: 4388
+    outs:
+    - path: data/interim/train_merged.parquet
+      hash: md5
+      md5: 3c35de742422477e1c6eecc888e54e72
+      size: 81145609
+  prepare_test:
+    cmd: python src/data/make_dataset.py --split test
+    deps:
+    - path: data/raw/test/test_identity.csv
+      hash: md5
+      md5: 54ae784303f82e5cadeb2d899b05c6a8
+      size: 25797161
+    - path: data/raw/test/test_transaction.csv
+      hash: md5
+      md5: 7ea6862ef4e078efb309e19fa49178fd
+      size: 613194934
+    - path: params.yaml
+      hash: md5
+      md5: a3596e143b96de339588aaefd5657be2
+      size: 904
+    - path: src/data/make_dataset.py
+      hash: md5
+      md5: a98c3e1214c18d45e506688a2eaf068d
+      size: 4388
+    outs:
+    - path: data/interim/test_merged.parquet
+      hash: md5
+      md5: 82e741ecb8b015f7c28bed073b920c62
+      size: 70267504
