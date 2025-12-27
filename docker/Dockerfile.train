@@ -1,0 +1,21 @@
+# Image Python légère
+FROM python:3.10-slim
+
+# Empêche Python de buffer les logs (important pour Jenkins)
+ENV PYTHONUNBUFFERED=1
+
+# Dossier de travail dans le container
+WORKDIR /app
+
+# Copier les dépendances
+COPY requirements.txt .
+
+# Installer les dépendances
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Copier le code
+COPY src/ src/
+COPY data/ data/
+
+# Commande par défaut
+CMD ["python", "src/train.py"]
