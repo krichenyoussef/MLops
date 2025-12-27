@@ -1,69 +1,85 @@
-import lightgbm as lgb
 import pandas as pd
-import numpy as np
-from sklearn.model_selection import train_test_split
+import yaml
+import lightgbm as lgb
+from pathlib import Path
 from sklearn.metrics import roc_auc_score
-import subprocess
+import joblib
 
-def gpu_available():
-    try:
-        subprocess.check_output("nvidia-smi", stderr=subprocess.DEVNULL)
-        return True
-    except Exception:
-        return False
-
-import mlflow
-import mlflow.xgboost
-
-mlflow.set_experiment("ieee-cis-fraud")
+from src.models.utils import make_stratified_folds
 
 
-df = pd.read_parquet("../../data/data_features/train_features.parquet")
+# --------------------------------------------------
+# Resolve project root & load config
+# --------------------------------------------------
+PROJECT_ROOT = Path(__file__).resolve().parents[2]
 
-y = df["isFraud"]
-X = df.drop(columns=["isFraud", "TransactionID"])
+with open(PROJECT_ROOT / "params.yaml") as f:
+    cfg = yaml.safe_load(f)
 
-X_train, X_val, y_train, y_val = train_test_split(
-    X, y, test_size=0.2, stratify=y, random_state=42
+DATA_CFG = cfg["data"]
+TRAIN_CFG = cfg["train"]
+LGB_CFG = cfg["lightgbm"]
+
+
+# --------------------------------------------------
+# Paths
+# --------------------------------------------------
+MODELS_DIR = PROJECT_ROOT / "models"
+MODELS_DIR.mkdir(exist_ok=True)
+
+
+# --------------------------------------------------
+# Load data
+# --------------------------------------------------
+X = pd.read_parquet(PROJECT_ROOT / "data/features/X_train.parquet")
+y = pd.read_parquet(
+    PROJECT_ROOT / "data/features/y_train.parquet"
+)[DATA_CFG["target_col"]]
+
+
+# --------------------------------------------------
+# Cross-validation folds
+# --------------------------------------------------
+folds = make_stratified_folds(
+    y,
+    n_splits=TRAIN_CFG["n_splits"],
+    seed=TRAIN_CFG["seed"],
 )
 
-train_data = lgb.Dataset(X_train, label=y_train)
-val_data = lgb.Dataset(X_val, label=y_val)
-
-params = {
-    "objective": "binary",
-    "metric": "auc",
-    "learning_rate": 0.05,
-    "num_leaves": 64,
-    "feature_fraction": 0.8,
-    "bagging_fraction": 0.8,
-    "bagging_freq": 5,
-}
-
-# 🔥 Enable GPU if available
-if gpu_available():
-    print("🚀 Training on GPU")
-    params.update({
-        "device": "gpu",
-        "gpu_platform_id": 0,
-        "gpu_device_id": 0,
-        "max_bin": 255
-    })
-else:
-    print("💻 Training on CPU")
-    params["device"] = "cpu"
+oof_preds = pd.Series(0.0, index=y.index)
+fold_aucs = {}
 
 
-model = lgb.train(
-    params,
-    train_data,
-    valid_sets=[val_data],
-    num_boost_round=2000,
-    callbacks=[
-        lgb.early_stopping(stopping_rounds=100),
-        lgb.log_evaluation(period=50)
-    ]
-)
+# --------------------------------------------------
+# Train LightGBM with params.yaml config
+# --------------------------------------------------
+for fold, (tr_idx, val_idx) in enumerate(folds):
+    print(f"\n🔹 Training fold {fold + 1}/{TRAIN_CFG['n_splits']}")
 
-preds = model.predict(X_val)
-print("AUC:", roc_auc_score(y_val, preds))
+    model = lgb.LGBMClassifier(**LGB_CFG)
+
+    X_tr, X_val = X.iloc[tr_idx], X.iloc[val_idx]
+    y_tr, y_val = y.iloc[tr_idx], y.iloc[val_idx]
+
+    model.fit(X_tr, y_tr)
+
+    val_preds = model.predict_proba(X_val)[:, 1]
+    fold_auc = roc_auc_score(y_val, val_preds)
+
+    print(f"   ✅ Fold {fold} AUC: {fold_auc:.5f}")
+
+    oof_preds.iloc[val_idx] = val_preds
+    fold_aucs[f"fold_{fold}_auc"] = fold_auc
+
+    # --------------------------------------------------
+    # Save model
+    # --------------------------------------------------
+    model_path = MODELS_DIR / f"lightgbm_fold_{fold}.pkl"
+    joblib.dump(model, model_path)
+
+
+# --------------------------------------------------
+# Overall OOF evaluation
+# --------------------------------------------------
+oof_auc = roc_auc_score(y, oof_preds)
+print(f"\n🎯 LightGBM OOF AUC: {oof_auc:.5f}")
